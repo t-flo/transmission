@@ -52,6 +52,10 @@
 #define IN_MULTICAST(a) (((a) & 0xf0000000) == 0xe0000000)
 #endif
 
+#ifdef __SWITCH__
+#define IN6ADDR_ANY_INIT {{{ 0 }}}
+#endif
+
 const tr_address tr_in6addr_any = { TR_AF_INET6, { IN6ADDR_ANY_INIT } };
 const tr_address tr_inaddr_any = { TR_AF_INET, { { { { INADDR_ANY, 0x00, 0x00, 0x00 } } } } };
 

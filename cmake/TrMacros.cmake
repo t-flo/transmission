@@ -69,15 +69,7 @@ function(tr_make_id INPUT OVAR)
     set(${OVAR} "${ID}" PARENT_SCOPE)
 endfunction()
 
-macro(tr_github_upstream ID REPOID RELID RELMD5)
-    set(${ID}_RELEASE "${RELID}")
-    set(${ID}_UPSTREAM URL "https://github.com/${REPOID}/archive/${RELID}.tar.gz")
-    if(NOT SKIP_UPSTREAM_CHECKSUM)
-        list(APPEND ${ID}_UPSTREAM URL_MD5 "${RELMD5}")
-    endif()
-endmacro()
-
-macro(tr_add_external_auto_library ID LIBNAME)
+macro(tr_add_external_auto_library ID DIRNAME LIBNAME)
     if(USE_SYSTEM_${ID})
         tr_get_required_flag(USE_SYSTEM_${ID} SYSTEM_${ID}_IS_REQUIRED)
         find_package(${ID} ${${ID}_MINIMUM} ${SYSTEM_${ID}_IS_REQUIRED})
@@ -87,30 +79,32 @@ macro(tr_add_external_auto_library ID LIBNAME)
     if(USE_SYSTEM_${ID})
         unset(${ID}_UPSTREAM_TARGET)
     else()
-        set(${ID}_UPSTREAM_TARGET ${LIBNAME}-${${ID}_RELEASE})
+        set(${ID}_UPSTREAM_TARGET ${LIBNAME})
         set(${ID}_PREFIX "${CMAKE_BINARY_DIR}/third-party/${${ID}_UPSTREAM_TARGET}")
-
-        ExternalProject_Add(
-            ${${ID}_UPSTREAM_TARGET}
-            ${${ID}_UPSTREAM}
-            ${ARGN}
-            PREFIX "${${ID}_PREFIX}"
-            CMAKE_ARGS
-                -Wno-dev # We don't want to be warned over unused variables
-                "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
-                "-DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}"
-                "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}"
-                "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
-                "-DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>"
-        )
-
-        set_property(TARGET ${${ID}_UPSTREAM_TARGET} PROPERTY FOLDER "ThirdParty")
 
         set(${ID}_INCLUDE_DIR "${${ID}_PREFIX}/include" CACHE INTERNAL "")
         set(${ID}_LIBRARY "${${ID}_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}${LIBNAME}${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE INTERNAL "")
 
         set(${ID}_INCLUDE_DIRS ${${ID}_INCLUDE_DIR})
         set(${ID}_LIBRARIES ${${ID}_LIBRARY})
+
+        ExternalProject_Add(
+            ${${ID}_UPSTREAM_TARGET}
+            URL "${CMAKE_SOURCE_DIR}/third-party/${DIRNAME}"
+            ${ARGN}
+            PREFIX "${${ID}_PREFIX}"
+            CMAKE_ARGS
+                -Wno-dev # We don't want to be warned over unused variables
+                "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
+                "-DCMAKE_USER_MAKE_RULES_OVERRIDE=${CMAKE_USER_MAKE_RULES_OVERRIDE}"
+                "-DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS}"
+                "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}"
+                "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
+                "-DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_DIR>"
+            BUILD_BYPRODUCTS "${${ID}_LIBRARY}"
+        )
+
+        set_property(TARGET ${${ID}_UPSTREAM_TARGET} PROPERTY FOLDER "ThirdParty")
     endif()
 endmacro()
 

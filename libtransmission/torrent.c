@@ -2076,7 +2076,19 @@ tr_torrentClearIdleLimitHitCallback (tr_torrent * torrent)
   tr_torrentSetIdleLimitHitCallback (torrent, NULL, NULL);
 }
 
-#ifndef _WIN32
+#ifdef __SWITCH__
+
+static void
+torrentCallScript (const tr_torrent * tor, const char * script)
+{
+  // Not supported
+  (void)tor;
+  (void)script;
+}
+
+#else
+
+#ifdef _WIN32
 
 static void
 onSigCHLD (int i UNUSED)
@@ -2197,6 +2209,8 @@ torrentCallScript (const tr_torrent * tor, const char * script)
         tr_free (env[i]);
     }
 }
+
+#endif /* __SWITCH__ */
 
 void
 tr_torrentRecheckCompleteness (tr_torrent * tor)
@@ -2919,8 +2933,8 @@ removeEmptyFoldersAndJunkFiles (const char * folder)
             }
         }
 
-      tr_sys_path_remove (folder, NULL);
       tr_sys_dir_close (odir, NULL);
+      tr_sys_path_remove (folder, NULL);
     }
 }
 

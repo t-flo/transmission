@@ -255,7 +255,7 @@ getHomeDir (void)
         {
 #ifdef _WIN32
           home = win32_get_known_folder (&FOLDERID_Profile);
-#else
+#elif !defined(__SWITCH__)
           struct passwd * pw = getpwuid (getuid ());
           if (pw)
             home = tr_strdup (pw->pw_dir);
@@ -436,6 +436,9 @@ isWebClientDir (const char * path)
 const char *
 tr_getWebClientDir (const tr_session * session UNUSED)
 {
+#ifdef __SWITCH__
+  static char * s = "sdmc:/switch/nxTransmission/web";
+#else
   static char * s = NULL;
 
   if (!s)
@@ -584,6 +587,6 @@ tr_getWebClientDir (const tr_session * session UNUSED)
 
         }
     }
-
+#endif // SWITCH
   return s;
 }

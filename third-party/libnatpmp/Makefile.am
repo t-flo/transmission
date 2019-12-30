@@ -8,11 +8,12 @@ libnatpmp_a_SOURCES = \
     wingettimeofday.c
 
 noinst_HEADERS = \
-    declspec.h \
     getgateway.h \
     natpmp.h \
+    natpmp_declspec.h \
     wingettimeofday.h
 
 EXTRA_DIST = \
+    CMakeLists.txt \
     README \
     LICENSE

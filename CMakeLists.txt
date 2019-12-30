@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.1)
 project(transmission)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_SOURCE_DIR}/cmake.switch)
 
 include(CheckIncludeFile)
 include(CheckIncludeFiles)
@@ -11,28 +11,29 @@ include(ExternalProject)
 include(GNUInstallDirs)
 include(TrMacros)
 
-        option(ENABLE_DAEMON        "Build daemon" ON)
-tr_auto_option(ENABLE_GTK           "Build GTK+ client" AUTO)
-tr_auto_option(ENABLE_QT            "Build Qt client" AUTO)
-        option(ENABLE_UTILS         "Build utils (create, edit, show)" ON)
+        option(ENABLE_DAEMON        "Build daemon" OFF)
+        option(ENABLE_SWITCH        "Build switch app" ON)
+tr_auto_option(ENABLE_GTK           "Build GTK+ client" OFF)
+tr_auto_option(ENABLE_QT            "Build Qt client" OFF)
+        option(ENABLE_UTILS         "Build utils (create, edit, show)" OFF)
         option(ENABLE_CLI           "Build command-line client" OFF)
-        option(ENABLE_TESTS         "Build unit tests" ON)
+        option(ENABLE_TESTS         "Build unit tests" OFF)
         option(ENABLE_LIGHTWEIGHT   "Optimize libtransmission for low-resource systems: smaller cache size, prefer unencrypted peer connections, etc." OFF)
         option(ENABLE_UTP           "Build µTP support" ON)
-        option(ENABLE_NLS           "Enable native language support" ON)
-        option(INSTALL_DOC          "Build/install documentation" ON)
+        option(ENABLE_NLS           "Enable native language support" OFF)
+        option(INSTALL_DOC          "Build/install documentation" OFF)
         option(INSTALL_LIB          "Install the library" OFF)
         option(USE_QT5              "Use Qt 5 (instead of default Qt 4)" OFF)
-tr_auto_option(USE_SYSTEM_EVENT2    "Use system event2 library" AUTO)
-tr_auto_option(USE_SYSTEM_DHT       "Use system dht library" AUTO)
+tr_auto_option(USE_SYSTEM_EVENT2    "Use system event2 library" OFF)
+tr_auto_option(USE_SYSTEM_DHT       "Use system dht library" OFF)
 tr_auto_option(USE_SYSTEM_MINIUPNPC "Use system miniupnpc library" AUTO)
-tr_auto_option(USE_SYSTEM_NATPMP    "Use system natpmp library" AUTO)
-tr_auto_option(USE_SYSTEM_UTP       "Use system utp library" AUTO)
-tr_auto_option(USE_SYSTEM_B64       "Use system b64 library" AUTO)
-tr_list_option(WITH_CRYPTO          "Use specified crypto library" AUTO openssl cyassl polarssl)
-tr_auto_option(WITH_INOTIFY         "Enable inotify support (on systems that support it)" AUTO)
-tr_auto_option(WITH_KQUEUE          "Enable kqueue support (on systems that support it)" AUTO)
-tr_auto_option(WITH_SYSTEMD         "Add support for systemd startup notification (on systems that support it)" AUTO)
+tr_auto_option(USE_SYSTEM_NATPMP    "Use system natpmp library" OFF)
+tr_auto_option(USE_SYSTEM_UTP       "Use system utp library" OFF)
+tr_auto_option(USE_SYSTEM_B64       "Use system b64 library" OFF)
+tr_list_option(WITH_CRYPTO          "Use specified crypto library" AUTO polarssl)
+tr_auto_option(WITH_INOTIFY         "Enable inotify support (on systems that support it)" OFF)
+tr_auto_option(WITH_KQUEUE          "Enable kqueue support (on systems that support it)" OFF)
+tr_auto_option(WITH_SYSTEMD         "Add support for systemd startup notification (on systems that support it)" OFF)
 
 set(TR_NAME ${PROJECT_NAME})
 
@@ -104,13 +105,6 @@ set(GTK_MINIMUM             3.4.0)
 set(GLIB_MINIMUM            2.32.0)
 set(GIO_MINIMUM             2.26.0)
 set(LIBAPPINDICATOR_MINIMUM 0.4.90)
-
-tr_github_upstream(EVENT2    libevent/libevent  c51b159cff 7be95856a39714dfd2218cb56415c990)
-tr_github_upstream(NATPMP    miniupnp/libnatpmp cf7f452d66 f1e7d5bf580972738d8ef21743d0adf7)
-tr_github_upstream(MINIUPNPC miniupnp/miniupnp  5de2bcb561 bdc5b64b9b8401d3524c50b9ec8173c1)
-tr_github_upstream(DHT       jech/dht           cc379e406d 958253fafa01c59950d357c148aff090)
-tr_github_upstream(UTP       bittorrent/libutp  7c4f19abdf 8b92aa05abec5f6675cdde6477cd6f51)
-tr_github_upstream(B64       mikedld/libb64     c1e3323498 10128cb30ad768d2c4caf627e0f69db3)
 
 if(WIN32)
     foreach(L C CXX)
@@ -299,53 +293,31 @@ if(WIN32)
               COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 -i "${THIRD_PARTY_DIR}/event2-01-win32.patch"
               COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 -i "${THIRD_PARTY_DIR}/event2-02-win32.patch")
 else()
-    tr_add_external_auto_library(EVENT2 event
-        BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND "<SOURCE_DIR>/autogen.sh"
-                  COMMAND "<SOURCE_DIR>/configure" "--prefix=<INSTALL_DIR>" "--disable-shared")
+    tr_add_external_auto_library(EVENT2 libevent event)
 endif()
 
-tr_add_external_auto_library(NATPMP natpmp
-    PATCH_COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/natpmp.cmake" "<SOURCE_DIR>/CMakeLists.txt")
+tr_add_external_auto_library(NATPMP libnatpmp natpmp)
 if(NOT USE_SYSTEM_NATPMP)
     set(NATPMP_DEFINITIONS -DNATPMP_STATICLIB)
 endif()
 
-tr_add_external_auto_library(MINIUPNPC miniupnpc
-    PATCH_COMMAND "${CMAKE_COMMAND}" -E remove_directory "<SOURCE_DIR>/minissdpd"
-          COMMAND "${CMAKE_COMMAND}" -E remove_directory "<SOURCE_DIR>/miniupnpc-async"
-          COMMAND "${CMAKE_COMMAND}" -E remove_directory "<SOURCE_DIR>/miniupnpc-libevent"
-          COMMAND "${CMAKE_COMMAND}" -E remove_directory "<SOURCE_DIR>/miniupnpd"
-          COMMAND "${CMAKE_COMMAND}" -E remove "<SOURCE_DIR>/README"
-          COMMAND "${CMAKE_COMMAND}" -E copy_directory "<SOURCE_DIR>/miniupnpc" "<SOURCE_DIR>"
-          COMMAND "${CMAKE_COMMAND}" -E remove_directory "<SOURCE_DIR>/miniupnpc"
-    CMAKE_ARGS
-        -DUPNPC_BUILD_STATIC=ON
-        -DUPNPC_BUILD_SHARED=OFF
-        -DUPNPC_BUILD_TESTS=OFF)
-set(MINIUPNPC_DEFINITIONS -DSYSTEM_MINIUPNP)
 if(NOT USE_SYSTEM_MINIUPNPC)
-    list(APPEND MINIUPNPC_DEFINITIONS -DMINIUPNP_STATICLIB)
-    set(MINIUPNPC_VERSION 1.9)
-    set(MINIUPNPC_API_VERSION 12)
+    message(FATAL_ERROR "switch-miniupnpc is required, install with pacman!")
 endif()
+set(MINIUPNPC_DEFINITIONS -DSYSTEM_MINIUPNP)
+find_package(MINIUPNPC)
 
-tr_add_external_auto_library(DHT dht
+tr_add_external_auto_library(DHT dht dht
     PATCH_COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/dht.cmake" "<SOURCE_DIR>/CMakeLists.txt")
 
 if(ENABLE_UTP)
-    tr_add_external_auto_library(UTP utp
+    tr_add_external_auto_library(UTP libutp utp
         PATCH_COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/utp.cmake" "<SOURCE_DIR>/CMakeLists.txt"
-              COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/utp_config.h" "<SOURCE_DIR>/utp_config.h"
-              COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 --binary -i "${THIRD_PARTY_DIR}/utp-01-ticket-5002.patch"
-              COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 --binary -i "${THIRD_PARTY_DIR}/utp-02-win32.patch"
-              COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 --binary -i "${THIRD_PARTY_DIR}/utp-03-msvc14.patch")
+              COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/utp_config.h" "<SOURCE_DIR>/utp_config.h")
 endif()
 
-tr_add_external_auto_library(B64 b64
-    PATCH_COMMAND "${CMAKE_COMMAND}" -E copy "${THIRD_PARTY_DIR}/b64.cmake" "<SOURCE_DIR>/CMakeLists.txt"
-          COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 -i "${THIRD_PARTY_DIR}/b64-01-newline.patch"
-          COMMAND "${CMAKE_COMMAND}" -E chdir "<SOURCE_DIR>" patch -p1 -i "${THIRD_PARTY_DIR}/b64-02-unsigned-char.patch")
+tr_add_external_auto_library(B64 libb64 b64)
+
 
 if(WITH_INOTIFY)
     tr_get_required_flag(WITH_INOTIFY INOTIFY_IS_REQUIRED)
@@ -529,7 +501,7 @@ endif()
 
 add_subdirectory(libtransmission)
 
-foreach(P daemon cli utils gtk qt)
+foreach(P daemon switch cli utils gtk qt)
     string(TOUPPER "${P}" P_ID)
     if(ENABLE_${P_ID})
         add_subdirectory(${P})

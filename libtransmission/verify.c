@@ -200,6 +200,9 @@ getVerifyLock (void)
 static void
 verifyThreadFunc (void * unused UNUSED)
 {
+#ifdef __SWITCH__
+  tr_switch_register_current_thread();
+#endif
   for (;;)
     {
       int changed = 0;
@@ -236,6 +239,10 @@ verifyThreadFunc (void * unused UNUSED)
 
   verifyThread = NULL;
   tr_lockUnlock (getVerifyLock ());
+
+#ifdef __SWITCH__
+    tr_switch_finish_current_thread();
+#endif
 }
 
 static int

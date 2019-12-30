@@ -36,6 +36,7 @@
  #include <errno.h>
  #include <sys/socket.h>
  #include <netinet/in.h>
+ #include <arpa/inet.h>
 #endif
 
 #ifdef _WIN32

@@ -32,10 +32,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef __SWITCH__
 #include <sys/mman.h> /* mmap (), munmap () */
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h> /* lseek (), write (), ftruncate (), pread (), pwrite (), pathconf (), etc */
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
 
 #ifdef HAVE_XFS_XFS_H
  #include <xfs/xfs.h>
@@ -271,6 +276,10 @@ tr_sys_path_is_same (const char  * path1,
                      const char  * path2,
                      tr_error   ** error)
 {
+#ifdef __SWITCH__
+  (void) error;
+  bool ret = strcmp (path1, path2) == 0;
+#else
   bool ret = false;
   struct stat sb1, sb2;
 
@@ -282,6 +291,7 @@ tr_sys_path_is_same (const char  * path1,
   else
     set_system_error_if_file_found (error, errno);
 
+#endif
   return ret;
 }
 
@@ -290,6 +300,11 @@ tr_sys_path_resolve (const char  * path,
                      tr_error   ** error)
 {
   char * ret = NULL;
+#ifdef __SWITCH__
+  (void) error;
+  ret = tr_strdup (path);
+#else
+
   char * tmp = NULL;
 
   assert (path != NULL);
@@ -322,9 +337,77 @@ tr_sys_path_resolve (const char  * path,
     set_system_error (error, errno);
 
   tr_free (tmp);
+#endif // __SWITCH__
 
   return ret;
 }
+
+#ifdef __SWITCH__
+
+#include <libgen.h>
+
+void *
+memrchr (const void *, int, size_t);
+
+/* basename and dirname are missing on switch, copied implementation from glibc. */
+
+static char *
+nxbasename (const char *filename)
+{
+  char *p = strrchr (filename, '/');
+  return p ? p + 1 : (char *) filename;
+}
+
+static char *
+nxdirname (char *path)
+{
+  static const char dot[] = ".";
+  char *last_slash;
+  /* Find last '/'.  */
+  last_slash = path != NULL ? strrchr (path, '/') : NULL;
+  if (last_slash != NULL && last_slash != path && last_slash[1] == '\0')
+    {
+      /* Determine whether all remaining characters are slashes.  */
+      char *runp;
+      for (runp = last_slash; runp != path; --runp)
+        if (runp[-1] != '/')
+          break;
+      /* The '/' is the last character, we have to look further.  */
+      if (runp != path)
+        last_slash = memrchr (path, '/', runp - path);
+    }
+  if (last_slash != NULL)
+    {
+      /* Determine whether all remaining characters are slashes.  */
+      char *runp;
+      for (runp = last_slash; runp != path; --runp)
+        if (runp[-1] != '/')
+          break;
+      /* Terminate the path.  */
+      if (runp == path)
+        {
+          /* The last slash is the first character in the string.  We have to
+             return "/".  As a special case we have to return "//" if there
+             are exactly two slashes at the beginning of the string.  See
+             XBD 4.10 Path Name Resolution for more information.  */
+          if (last_slash == path + 1)
+            ++last_slash;
+          else
+            last_slash = path + 1;
+        }
+      else
+        last_slash = runp;
+      last_slash[0] = '\0';
+    }
+  else
+    /* This assignment is ill-designed but the XPG specs require to
+       return a string containing "." in any case no directory part is
+       found and so a static and constant string is required.  */
+    path = (char *) dot;
+  return path;
+}
+
+#endif
 
 char *
 tr_sys_path_basename (const char  * path,
@@ -336,7 +419,11 @@ tr_sys_path_basename (const char  * path,
   assert (path != NULL);
 
   tmp = tr_strdup (path);
+#ifdef __SWITCH__
+  ret = nxbasename (tmp);
+#else
   ret = basename (tmp);
+#endif
   if (ret != NULL)
     ret = tr_strdup (ret);
   else
@@ -357,7 +444,11 @@ tr_sys_path_dirname (const char  * path,
   assert (path != NULL);
 
   tmp = tr_strdup (path);
+#ifdef __SWITCH__
+  ret = nxdirname (tmp);
+#else
   ret = dirname (tmp);
+#endif
   if (ret != NULL)
     ret = tr_strdup (ret);
   else
@@ -367,6 +458,42 @@ tr_sys_path_dirname (const char  * path,
 
   return ret;
 }
+
+#ifdef __SWITCH__
+static char *
+make_full_path (const char *src)
+{
+    char *dst = malloc(strlen (src) + 6);
+    if (dst == NULL)
+      return NULL;
+    if(strstr(src, "sdmc:") == NULL)
+    {
+      strcpy(dst, "sdmc:");
+      strcat(dst, src);
+    }
+    else
+    {
+      strcpy(dst, src);
+    }
+    
+    return dst;
+}
+
+static bool
+is_dir (const char *path)
+{
+  struct stat st;
+  return (stat(path, &st) == 0) && (st.st_mode & S_IFDIR);
+}
+
+static bool
+path_exists (const char *path)
+{
+  struct stat st;
+  return stat(path, &st) == 0;
+}
+
+#endif
 
 bool
 tr_sys_path_rename (const char  * src_path,
@@ -378,7 +505,21 @@ tr_sys_path_rename (const char  * src_path,
   assert (src_path != NULL);
   assert (dst_path != NULL);
 
+#ifdef __SWITCH__
+  char *full_src_path = make_full_path(src_path);
+  char *full_dst_path = make_full_path(dst_path);
+  
+  // If a dst file exists need to be removed on switch
+  if(path_exists(full_dst_path) && !is_dir(full_dst_path))
+    unlink(full_dst_path);
+
+  ret = rename (full_src_path, full_dst_path) != -1;
+
+  free(full_src_path);
+  free(full_dst_path);
+#else
   ret = rename (src_path, dst_path) != -1;
+#endif
 
   if (!ret)
     set_system_error (error, errno);
@@ -393,9 +534,18 @@ tr_sys_path_remove (const char  * path,
   bool ret;
 
   assert (path != NULL);
+#ifdef __SWITCH__
+  char *full_path = make_full_path(path);
 
+  if(is_dir(full_path))
+    ret = rmdir(full_path) != -1;
+  else
+    ret = unlink (full_path) != -1;
+
+  free(full_path);
+#else
   ret = remove (path) != -1;
-
+#endif
   if (!ret)
     set_system_error (error, errno);
 
@@ -781,6 +931,11 @@ tr_sys_file_prefetch (tr_sys_file_t    handle,
   if (!ret)
     set_system_error (error, errno);
 
+#elif defined(__SWITCH__)
+  (void)handle;
+  (void)offset;
+  (void)size;
+  (void)error;
 #endif
 
   return ret;
@@ -887,6 +1042,13 @@ tr_sys_file_map_for_reading (tr_sys_file_t    handle,
                              uint64_t         size,
                              tr_error      ** error)
 {
+#ifdef __SWITCH__
+  (void) handle;
+  (void) offset;
+  (void) size;
+  (void) error;
+  return NULL;
+#else
   void * ret;
 
   assert (handle != TR_BAD_SYS_FILE);
@@ -901,6 +1063,7 @@ tr_sys_file_map_for_reading (tr_sys_file_t    handle,
     }
 
   return ret;
+#endif
 }
 
 bool
@@ -908,6 +1071,13 @@ tr_sys_file_unmap (const void  * address,
                    uint64_t      size,
                    tr_error   ** error)
 {
+#ifdef __SWITCH__
+  (void) address;
+  (void) size;
+  (void) error;
+  return false;
+#else
+
   bool ret;
 
   assert (address != NULL);
@@ -919,6 +1089,7 @@ tr_sys_file_unmap (const void  * address,
     set_system_error (error, errno);
 
   return ret;
+#endif
 }
 
 char *

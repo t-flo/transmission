@@ -493,6 +493,9 @@ getQueueLock (void)
 static void
 makeMetaWorkerFunc (void * unused UNUSED)
 {
+#ifdef __SWITCH__
+  tr_switch_register_current_thread();
+#endif
   for (;;)
     {
       tr_metainfo_builder * builder = NULL;
@@ -515,6 +518,10 @@ makeMetaWorkerFunc (void * unused UNUSED)
     }
 
   workerThread = NULL;
+
+#ifdef __SWITCH__
+    tr_switch_finish_current_thread();
+#endif
 }
 
 void

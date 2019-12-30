@@ -32,107 +32,117 @@
 #include "trevent.h"
 #include "utils.h"
 
+#ifdef __SWITCH__
+#include <sys/socket.h>
+#include <netinet/in.h>
 
-#ifdef _WIN32
+typedef int tr_pipe_end_t;
 
-typedef SOCKET tr_pipe_end_t;
-
-static int
-pgpipe (tr_pipe_end_t handles[2])
+static int pgpipe(tr_pipe_end_t handles[2])
 {
-    SOCKET s;
+    int s;
     struct sockaddr_in serv_addr;
-    int len = sizeof (serv_addr);
+    int len = sizeof(serv_addr);
 
-    handles[0] = handles[1] = INVALID_SOCKET;
+    handles[0] = handles[1] = -1;
 
-    if ((s = socket (AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+    if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        tr_logAddDebug ("pgpipe failed to create socket: %ui", WSAGetLastError ());
+        tr_logAddDebug("pgpipe failed to create socket: %ui", errno);
         return -1;
     }
 
-    memset (&serv_addr, 0, sizeof (serv_addr));
+    memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons (0);
-    serv_addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
-    if (bind (s, (SOCKADDR *) & serv_addr, len) == SOCKET_ERROR)
+    serv_addr.sin_port = htons(0);
+    serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    if (bind(s, &serv_addr, len) == -1)
     {
-        tr_logAddDebug ("pgpipe failed to bind: %ui", WSAGetLastError ());
-        closesocket (s);
-        return -1;
-    }
-    if (listen (s, 1) == SOCKET_ERROR)
-    {
-        tr_logAddNamedDbg ("event","pgpipe failed to listen: %ui", WSAGetLastError ());
-        closesocket (s);
-        return -1;
-    }
-    if (getsockname (s, (SOCKADDR *) & serv_addr, &len) == SOCKET_ERROR)
-    {
-        tr_logAddDebug ("pgpipe failed to getsockname: %ui", WSAGetLastError ());
-        closesocket (s);
-        return -1;
-    }
-    if ((handles[1] = socket (PF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
-    {
-        tr_logAddDebug ("pgpipe failed to create socket 2: %ui", WSAGetLastError ());
-        closesocket (s);
+        tr_logAddDebug("pgpipe failed to bind: %ui", errno);
+        close(s);
         return -1;
     }
 
-    if (connect (handles[1], (SOCKADDR *) & serv_addr, len) == SOCKET_ERROR)
+    if (listen(s, 1) == -1)
     {
-        tr_logAddDebug ("pgpipe failed to connect socket: %ui", WSAGetLastError ());
-        closesocket (s);
+        tr_logAddNamedDbg("event", "pgpipe failed to listen: %ui", errno);
+        close(s);
         return -1;
     }
-    if ((handles[0] = accept (s, (SOCKADDR *) & serv_addr, &len)) == INVALID_SOCKET)
+
+    if (getsockname(s, &serv_addr, &len) == -1)
     {
-        tr_logAddDebug ("pgpipe failed to accept socket: %ui", WSAGetLastError ());
-        closesocket (handles[1]);
-        handles[1] = INVALID_SOCKET;
-        closesocket (s);
+        tr_logAddDebug("pgpipe failed to getsockname: %ui", errno);
+        close(s);
         return -1;
     }
-    closesocket (s);
+
+    if ((handles[1] = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+    {
+        tr_logAddDebug("pgpipe failed to create socket 2: %ui", errno);
+        close(s);
+        return -1;
+    }
+
+    if (connect(handles[1], &serv_addr, len) == -1)
+    {
+        tr_logAddDebug("pgpipe failed to connect socket: %ui", errno);
+        close(s);
+        return -1;
+    }
+
+    if ((handles[0] = accept(s, &serv_addr, &len)) == -1)
+    {
+        tr_logAddDebug("pgpipe failed to accept socket: %ui", errno);
+        close(handles[1]);
+        handles[1] = -1;
+        close(s);
+        return -1;
+    }
+
+    close(s);
     return 0;
 }
 
-static int
-piperead (tr_pipe_end_t   s,
-          void          * buf,
-          int             len)
+static int piperead(tr_pipe_end_t s, void* buf, int len)
 {
-    int ret = recv (s, buf, len, 0);
+    int ret = recv(s, buf, len, 0);
 
-    if (ret < 0) {
-        const int werror= WSAGetLastError ();
-        switch (werror) {
+    if (ret < 0)
+    {
+        switch (errno)
+        {
           /* simplified error mapping (not valid for connect) */
-            case WSAEWOULDBLOCK:
+            case EWOULDBLOCK:
                 errno = EAGAIN;
                 break;
-            case WSAECONNRESET:
+            case ECONNRESET:
                 /* EOF on the pipe! (win32 socket based implementation) */
                 ret = 0;
                 /* fall through */
             default:
-                errno = werror;
                 break;
         }
-    } else
+    }    
+    else
+    {
         errno = 0;
+    }
+    if(ret == 0)
+    {
+        *(char *)(buf) = '\0';
+    }
     return ret;
 }
 
-#define pipe(a) pgpipe (a)
-#define pipewrite(a,b,c) send (a, (char*)b,c,0)
+#define pipe(a) pgpipe(a)
+#define pipewrite(a, b, c) send(a, (char*)b, c, 0)
 
 #else
 typedef int tr_pipe_end_t;
-#define piperead(a,b,c) read (a,b,c)
-#define pipewrite(a,b,c) write (a,b,c)
+#define piperead(a, b, c) read(a, b, c)
+#define pipewrite(a, b, c) write(a, b, c)
 #endif
 
 /***
@@ -236,6 +246,10 @@ libeventThreadFunc (void * veh)
     signal (SIGPIPE, SIG_IGN);
 #endif
 
+#ifdef __SWITCH__
+  tr_switch_register_current_thread();
+#endif
+
     /* create the libevent bases */
     base = event_base_new ();
 
@@ -260,6 +274,10 @@ libeventThreadFunc (void * veh)
     eh->session->events = NULL;
     tr_free (eh);
     tr_logAddDebug ("Closing libevent thread");
+
+#ifdef __SWITCH__
+    tr_switch_finish_current_thread();
+#endif
 }
 
 void

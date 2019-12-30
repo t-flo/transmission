@@ -365,7 +365,7 @@ ensureSessionFdInfoExists (tr_session * session)
       fileset_construct (&i->fileset, FILE_CACHE_SIZE);
       session->fdInfo = i;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__SWITCH__)
       /* set the open-file limit to the largest safe size wrt FD_SETSIZE */
       struct rlimit limit;
       if (!getrlimit (RLIMIT_NOFILE, &limit))

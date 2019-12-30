@@ -776,7 +776,7 @@ sessionSetImpl (void * vdata)
   if (tr_variantDictFindInt (settings, TR_KEY_message_level, &i))
     tr_logSetLevel (i);
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__SWITCH__)
   if (tr_variantDictFindInt (settings, TR_KEY_umask, &i))
     {
       session->umask = (mode_t)i;

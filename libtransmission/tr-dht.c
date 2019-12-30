@@ -149,6 +149,10 @@ dht_bootstrap (void *closure)
     int i;
     int num = cl->len / 6, num6 = cl->len6 / 18;
 
+    #ifdef __SWITCH__
+        tr_switch_register_current_thread();
+    #endif
+
     if (session != cl->session)
         return;
 
@@ -258,6 +262,10 @@ dht_bootstrap (void *closure)
         tr_free (cl->nodes6);
     tr_free (closure);
     tr_logAddNamedDbg ("DHT", "Finished bootstrapping");
+
+#ifdef __SWITCH__
+    tr_switch_finish_current_thread();
+#endif
 }
 
 int

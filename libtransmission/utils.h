@@ -526,6 +526,20 @@ void tr_net_init (void);
 ****
 ***/
 
+#ifdef __SWITCH__
+
+#include <pthread.h>
+
+/* libnx does not support detaching threads, they must be joined before exiting the main thread */
+
+void tr_switch_init(void);
+void tr_switch_join_finished_threads(void);
+void tr_switch_exit(void);
+void tr_switch_register_current_thread(void);
+void tr_switch_finish_current_thread(void);
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif

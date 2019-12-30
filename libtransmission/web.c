@@ -379,6 +379,10 @@ tr_webThreadFunc (void * vsession)
   struct tr_web_task * task;
   tr_session * session = vsession;
 
+#ifdef __SWITCH__
+  tr_switch_register_current_thread();
+#endif
+
   /* try to enable ssl for https support; but if that fails,
    * try a plain vanilla init */
   if (curl_global_init (CURL_GLOBAL_SSL))
@@ -527,6 +531,10 @@ tr_webThreadFunc (void * vsession)
   tr_free (web->cookie_filename);
   tr_free (web);
   session->web = NULL;
+
+#ifdef __SWITCH__
+  tr_switch_finish_current_thread();
+#endif
 }
 
 

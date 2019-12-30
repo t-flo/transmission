@@ -1578,7 +1578,7 @@ tr_valloc (size_t bufLen)
     if (posix_memalign (&buf, pageSize, allocLen))
       buf = NULL; /* just retry with valloc/malloc */
 #endif
-#ifdef HAVE_VALLOC
+#if defined (HAVE_VALLOC) && !defined(__SWITCH__)
   if (!buf)
     buf = valloc (allocLen);
 #endif
@@ -1905,3 +1905,94 @@ tr_net_init (void)
         initialized = true;
     }
 }
+
+/***
+****
+***/
+
+#ifdef __SWITCH__
+
+struct tr_switch_finished_thread { 
+    pthread_t thread;
+    bool finished;
+    struct tr_switch_finished_thread* next; 
+};
+
+pthread_mutex_t finished_threads_mutex;
+struct tr_switch_finished_thread* finished_threads;
+
+void tr_switch_init()
+{
+  finished_threads = NULL;
+}
+
+void tr_switch_join_finished_threads()
+{
+  pthread_mutex_lock(&finished_threads_mutex);
+
+  struct tr_switch_finished_thread* actual = finished_threads;
+  while(actual != NULL)
+  {    
+    if(actual->finished)
+    {
+      pthread_join(actual->thread, NULL);
+      struct tr_switch_finished_thread* tmp = actual;
+      actual = actual->next;
+      free(tmp);
+      continue;
+    }
+
+    actual = actual->next;
+  }
+
+  pthread_mutex_unlock(&finished_threads_mutex);
+}
+
+void tr_switch_exit()
+{
+  struct tr_switch_finished_thread* actual = finished_threads;
+  while(actual != NULL)
+  {
+    pthread_join(actual->thread, NULL);
+    struct tr_switch_finished_thread* tmp = actual;
+    actual = actual->next;
+    free(tmp);
+  }
+  pthread_mutex_destroy(&finished_threads_mutex);
+}
+
+void tr_switch_register_current_thread()
+{
+  pthread_mutex_lock(&finished_threads_mutex);
+
+  struct tr_switch_finished_thread* current = (struct tr_switch_finished_thread*)malloc(sizeof(struct tr_switch_finished_thread));
+  current->thread = pthread_self();
+  current->finished = false;
+  current->next = finished_threads;
+  finished_threads = current;
+
+  pthread_mutex_unlock(&finished_threads_mutex);
+}
+
+void tr_switch_finish_current_thread()
+{
+  pthread_mutex_lock(&finished_threads_mutex);
+
+  int current_thread = pthread_self();
+  struct tr_switch_finished_thread* actual = finished_threads;
+
+  while(actual != NULL)
+  {
+    if(actual->thread == current_thread)
+    {
+      actual->finished = true;
+      break;
+    }
+
+    actual = actual->next;
+  }
+
+  pthread_mutex_unlock(&finished_threads_mutex);
+}
+
+#endif

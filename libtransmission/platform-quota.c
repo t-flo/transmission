@@ -25,7 +25,7 @@
   #endif
  #elif defined (__sun)
   #include <sys/fs/ufs_quota.h> /* quotactl */
- #else
+ #elif !defined(__SWITCH__)
   #include <sys/quota.h> /* quotactl() */
  #endif
  #ifdef HAVE_GETMNTENT
@@ -41,8 +41,10 @@
   #endif
  #else /* BSD derived systems */
   #include <sys/param.h>
-  #include <sys/ucred.h>
-  #include <sys/mount.h>
+   #ifndef __SWITCH__
+     #include <sys/ucred.h>
+     #include <sys/mount.h>
+   #endif
  #endif
 #endif
 
@@ -72,7 +74,7 @@
 ****
 ***/
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__SWITCH__)
 static const char *
 getdev (const char * path)
 {
@@ -265,8 +267,8 @@ getquota (const char * device)
       close(fd);
 #else
   if (quotactl(QCMD(Q_GETQUOTA, USRQUOTA), device, getuid(), (caddr_t) &dq) == 0)
-    {
 #endif
+    {
       if (dq.dqb_bsoftlimit > 0)
         {
           /* Use soft limit first */
@@ -347,7 +349,7 @@ tr_getQuotaFreeSpace (const struct tr_device_info * info)
 {
   int64_t ret = -1;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__SWITCH__)
 
   if (info->fstype && !evutil_ascii_strcasecmp(info->fstype, "xfs"))
     {
@@ -410,7 +412,7 @@ tr_device_info_create (const char * path)
 
   info = tr_new0 (struct tr_device_info, 1);
   info->path = tr_strdup (path);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__SWITCH__)
   info->device = tr_strdup (getblkdev (path));
   info->fstype = tr_strdup (getfstype (path));
 #endif

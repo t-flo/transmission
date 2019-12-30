@@ -238,8 +238,8 @@ endforeach()
 target_link_libraries(${TR_NAME}
     ${CMAKE_THREAD_LIBS_INIT}
     ${ZLIB_LIBRARIES}
-    ${CRYPTO_LIBRARIES}
     ${CURL_LIBRARIES}
+    ${CRYPTO_LIBRARIES}
     ${EVENT2_LIBRARIES}
     ${NATPMP_LIBRARIES}
     ${MINIUPNPC_LIBRARIES}
@@ -248,6 +248,7 @@ target_link_libraries(${TR_NAME}
     ${B64_LIBRARIES}
     ${LIBINTL_LIBRARY}
     ${LIBM_LIBRARY}
+    nx
 )
 
 if(ICONV_FOUND)
