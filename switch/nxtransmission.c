@@ -23,6 +23,7 @@
 #include <switch.h>
 
 #define MY_NAME "nx-transmission"
+#define VERSION_STRING "0.1.0"
 
 #define NXLINK 0
 #define LOGTOFILE 0 // 1 if log to 
@@ -100,7 +101,7 @@ console_update_status (const char *fmt, ...)
     consoleSelect(&status_console);
     consoleClear();
 
-    printf(YELLOW "nxTransmission %s     ---" RED "     Press B to exit.\n", LONG_VERSION_STRING);
+    printf(YELLOW "nxTransmission %s     ---" RED "     Press B to exit.\n", VERSION_STRING);
 
     printf(GREEN "RPC: http://%s:%i  Default username/password: %s/%s\n\n",
         listen_addr,
