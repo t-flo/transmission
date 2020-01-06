@@ -506,17 +506,17 @@ tr_sys_path_rename (const char  * src_path,
   assert (dst_path != NULL);
 
 #ifdef __SWITCH__
-  char *full_src_path = make_full_path(src_path);
-  char *full_dst_path = make_full_path(dst_path);
+  char *full_src_path = make_full_path (src_path);
+  char *full_dst_path = make_full_path (dst_path);
   
   // If a dst file exists need to be removed on switch
-  if(path_exists(full_dst_path) && !is_dir(full_dst_path))
-    unlink(full_dst_path);
+  if(path_exists (full_dst_path) && !is_dir (full_dst_path))
+    unlink (full_dst_path);
 
   ret = rename (full_src_path, full_dst_path) != -1;
 
-  free(full_src_path);
-  free(full_dst_path);
+  free (full_src_path);
+  free (full_dst_path);
 #else
   ret = rename (src_path, dst_path) != -1;
 #endif
@@ -537,8 +537,8 @@ tr_sys_path_remove (const char  * path,
 #ifdef __SWITCH__
   char *full_path = make_full_path(path);
 
-  if(is_dir(full_path))
-    ret = rmdir(full_path) != -1;
+  if(is_dir (full_path))
+    ret = rmdir (full_path) != -1;
   else
     ret = unlink (full_path) != -1;
 
