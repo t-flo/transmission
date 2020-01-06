@@ -69,6 +69,66 @@
 ****
 ***/
 
+static uint32_t nxSplitBigFile(tr_info * info, const uint64_t max_file_size, int index)
+{
+  const tr_file * file = &info->files[index];
+  tr_file *newFiles;
+  uint32_t originalFileCount = info->fileCount;
+  uint32_t splitFileCount = file->length / max_file_size;
+
+  if((file->length % max_file_size) > 0)
+    splitFileCount += 1;
+  
+  newFiles = tr_new0(tr_file, info->fileCount + splitFileCount - 1);
+
+  info->fileCount = info->fileCount + splitFileCount - 1;
+
+  if(index - 1 > 0)
+    memcpy(newFiles, info->files, sizeof(tr_file) * index);
+
+  uint64_t remainingLength = file->length;
+  for(uint32_t i = 0; i < splitFileCount; i++)
+  {
+    uint64_t size = remainingLength < max_file_size ? remainingLength : max_file_size;
+    newFiles[index + i].name = tr_strdup_printf("%s/%02d", file->name, i);
+    newFiles[index + i].length = size;
+    newFiles[index + i].splitFile = true;
+    remainingLength -= max_file_size;
+  }
+
+  if((index + splitFileCount) < info->fileCount)
+    memcpy(&newFiles[index + splitFileCount], &info->files[index + 1], sizeof(tr_file) * (originalFileCount - (index + 1)));
+
+  tr_free(file->name);
+  tr_free(info->files);
+
+  info->files = newFiles;
+
+  return splitFileCount;
+}
+
+static void
+nxSplitBigFiles(tr_info * info, const uint64_t max_file_size)
+{
+  uint32_t fileCount = info->fileCount;
+  uint32_t i = 0;
+  while(i < fileCount)
+  {
+    if(info->files[i].length > max_file_size)
+    {
+      uint32_t splitCount = nxSplitBigFile(info, max_file_size, i);
+      fileCount += splitCount - 1;
+      i += splitCount;
+      continue;
+    }
+    i++;
+  }
+}
+
+/***
+****
+***/
+
 const char *
 tr_torrentName (const tr_torrent * tor)
 {
@@ -760,6 +820,9 @@ torrentInitFromInfo (tr_torrent * tor)
 {
   uint64_t t;
   tr_info * info = &tor->info;
+
+  if(tor->session->nxSplitFiles)
+    nxSplitBigFiles(info, tor->session->nxSplitFileSize);
 
   tor->blockSize = tr_getBlockSize (info->pieceSize);
 

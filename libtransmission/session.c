@@ -590,6 +590,8 @@ tr_sessionInit (const char * configDir,
   int64_t i;
   tr_session * session;
   struct init_data data;
+  bool boolVal;
+  uint64_t uint64Val;
 
   assert (tr_variantIsDict (clientSettings));
 
@@ -604,6 +606,13 @@ tr_sessionInit (const char * configDir,
   session->magicNumber = SESSION_MAGIC_NUMBER;
   tr_bandwidthConstruct (&session->bandwidth, session, NULL);
   tr_variantInitList (&session->removedTorrents, 0);
+
+  /* file splitting */
+  if(tr_variantDictFindBool (clientSettings, TR_KEY_nxSplitFiles, &boolVal))
+    session->nxSplitFiles = boolVal;
+  
+  if(tr_variantDictFindInt (clientSettings, TR_KEY_nxSplitSize, &uint64Val))
+    session->nxSplitFileSize = uint64Val;
 
   /* nice to start logging at the very beginning */
   if (tr_variantDictFindInt (clientSettings, TR_KEY_message_level, &i))

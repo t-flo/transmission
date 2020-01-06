@@ -1743,6 +1743,7 @@ typedef struct tr_file
     tr_piece_index_t  firstPiece;  /* We need pieces [firstPiece... */
     tr_piece_index_t  lastPiece;   /* ...lastPiece] to dl this file */
     uint64_t          offset;      /* file begins at the torrent's nth byte */
+    bool              splitFile;   /* the file is a split file */
 }
 tr_file;
 

@@ -221,6 +221,10 @@ struct tr_session
 
     struct tr_bindinfo         * public_ipv4;
     struct tr_bindinfo         * public_ipv6;
+
+    /* file splitting */
+    bool                         nxSplitFiles;
+    uint64_t                     nxSplitFileSize;
 };
 
 static inline tr_port

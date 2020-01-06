@@ -210,6 +210,8 @@ static const struct tr_key_struct my_static[] =
   { "nextScrapeTime", 14 },
   { "nodes", 5 },
   { "nodes6", 6 },
+  { "nx-split-files", 14 },
+  { "nx-split-size", 13 },
   { "open-dialog-dir", 15 },
   { "p", 1 },
   { "path", 4 },

@@ -212,6 +212,8 @@ enum
   TR_KEY_nextScrapeTime,
   TR_KEY_nodes,
   TR_KEY_nodes6,
+  TR_KEY_nxSplitFiles,
+  TR_KEY_nxSplitSize,
   TR_KEY_open_dialog_dir,
   TR_KEY_p,
   TR_KEY_path,

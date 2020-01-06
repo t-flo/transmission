@@ -28,6 +28,7 @@
 #define NXLINK 0
 #define LOGTOFILE 0 // 1 if log to 
 #define LOGFILE "sdmc:/switch/nxTransmission/log.txt"
+#define SPLIT_FILE_SIZE 4000000000l
 
 #define SOCK_BUFFERSIZE 32768
 extern int __nx_fs_num_sessions = 8;
@@ -159,7 +160,7 @@ reopen_log_file (const char *filename)
 static char *
 nxbasename (const char *filename)
 {
-  char *p = strrchr (filename, '/');
+  char * p = strrchr (filename, '/');
   return p ? p + 1 : (char *) filename;
 }
 
@@ -214,6 +215,85 @@ periodic_update (void)
     reportStatus ();
 }
 
+typedef void (*splitFileActionFunc)(const char * path);
+
+static void
+handleSplitFiles(tr_torrent * tor, splitFileActionFunc action)
+{
+    const tr_info * info = tr_torrentInfo(tor);
+
+    uint32_t i = 0;
+    while(i < info->fileCount)
+    {
+        tr_file * file = &info->files[i];
+        if(!file->splitFile)
+        {
+            i++;
+            continue;
+        }
+
+        tr_file * firstSplitFile = file;
+        char * fileName = tr_torrentFindFile(tor, i);
+        if(fileName == NULL)
+        {
+            i++;
+            continue;
+        }
+
+        char * dirName = tr_sys_path_dirname(fileName, NULL);
+
+        action(dirName);
+
+        tr_free(dirName);
+        tr_free(fileName);
+
+        i++;
+
+        while(i < info->fileCount)
+        {
+            file = &info->files[i];
+            if(strncmp(firstSplitFile->name, file->name, strlen(firstSplitFile->name)-3) != 0)
+                break;
+            i++;
+        }
+    }
+}
+
+static void removeSplitFile(const char * path)
+{
+    tr_sys_path_remove(path, NULL);
+}
+
+static void applyConcatenationFileAttributeToSplitFile(const char * path)
+{
+    fsdevSetConcatenationFileAttribute(path);
+}
+
+static void
+on_torrent_completed (tr_torrent * tor,
+                      tr_completeness completeness,
+                      bool was_running UNUSED,
+                      void * data UNUSED)
+{
+    if(completeness != TR_SEED)
+        return;
+
+    handleSplitFiles(tor, &applyConcatenationFileAttributeToSplitFile);
+}
+
+static tr_rpc_callback_status
+on_rpc_callback (tr_session            * session UNUSED,
+                 tr_rpc_callback_type    type,
+                 struct tr_torrent     * tor,
+                 void                  * user_data UNUSED)
+{
+    if (type == TR_RPC_TORRENT_ADDED)
+        tr_torrentSetCompletenessCallback(tor, &on_torrent_completed, NULL);
+    else if(type == TR_RPC_TORRENT_TRASHING)
+        handleSplitFiles(tor, &removeSplitFile);
+    return TR_RPC_OK;
+}
+
 static void
 stop_session (void)
 {
@@ -242,6 +322,7 @@ start_session (void)
     tr_formatter_size_init (DISK_K, DISK_K_STR, DISK_M_STR, DISK_G_STR, DISK_T_STR);
     tr_formatter_speed_init (SPEED_K, SPEED_K_STR, SPEED_M_STR, SPEED_G_STR, SPEED_T_STR);
     session = tr_sessionInit (configDir, true, &settings);
+    tr_sessionSetRPCCallback (session, on_rpc_callback, NULL);
     tr_logAddNamedInfo (NULL, "Using settings from \"%s\"", configDir);
     tr_sessionSaveSettings (session, configDir, &settings);
 
@@ -251,9 +332,15 @@ start_session (void)
     mySession = session;
 
     /* load the torrents */
-    tr_torrent ** torrents;
     tr_ctor * ctor = tr_ctorNew (mySession);
-    torrents = tr_sessionLoadTorrents (mySession, ctor, NULL);
+    
+    int count; 
+    tr_torrent ** torrents;
+
+    torrents = tr_sessionLoadTorrents (mySession, ctor, &count);
+    for(int i = 0; i < count; i++)
+        tr_torrentSetCompletenessCallback(torrents[i], &on_torrent_completed, NULL);
+
     tr_free (torrents);
     tr_ctorFree (ctor);
 
@@ -280,7 +367,7 @@ main_loop (void)
 }
 
 static int
-tr_main_impl (void)
+tr_main_impl (bool isExfat)
 {
     int ret = 1;
     tr_error * error = NULL;
@@ -297,6 +384,14 @@ tr_main_impl (void)
     {
         printMessage (logfile, TR_LOG_ERROR, MY_NAME, "Error loading config file -- exiting.", nxbasename(__FILE__), __LINE__);
         goto cleanup;
+    }
+    
+    /* if nx-split-files is not defined in settings, set it if exFat is not available */
+    bool boolVal = false;
+    if(!tr_variantDictFindBool (&settings, TR_KEY_nxSplitFiles, &boolVal) && !isExfat)
+    {
+        tr_variantDictAddBool (&settings, TR_KEY_nxSplitFiles, true);
+        tr_variantDictAddInt (&settings, TR_KEY_nxSplitSize, SPLIT_FILE_SIZE);
     }
 
     if (!start_session ())
@@ -320,6 +415,8 @@ cleanup:
 
 int main(void)
 {
+    int ret = -1;
+
     init_console();
 
     static const SocketInitConfig socketInitConfig = {
@@ -338,7 +435,17 @@ int main(void)
 
     int rc;
     if (R_FAILED(rc = socketInitialize(&socketInitConfig)))
+    {
         printf("socketInitializeDefault() failed: 0x%x.\n\n", rc);
+        goto cleanup;
+    }
+    
+    bool isExfat = false;
+    if (R_FAILED(rc = fsIsExFatSupported(&isExfat)))
+    {
+        printf("fsIsExFatSupported() failed: 0x%x.\n\n", rc);
+        goto cleanup;
+    }
 
 #if NXLINK
     nxlinkStdio();
@@ -353,10 +460,11 @@ int main(void)
     
     tr_switch_init();
 
-    int ret = tr_main_impl();
+    ret = tr_main_impl(isExfat);
 
     tr_switch_exit();
     
+cleanup:
     press_b_again_to_exit();
 
     socketExit();
