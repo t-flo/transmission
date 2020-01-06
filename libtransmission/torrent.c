@@ -2088,7 +2088,7 @@ torrentCallScript (const tr_torrent * tor, const char * script)
 
 #else
 
-#ifdef _WIN32
+#ifndef _WIN32
 
 static void
 onSigCHLD (int i UNUSED)

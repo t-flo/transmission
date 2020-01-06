@@ -248,8 +248,11 @@ target_link_libraries(${TR_NAME}
     ${B64_LIBRARIES}
     ${LIBINTL_LIBRARY}
     ${LIBM_LIBRARY}
-    nx
 )
+
+if(SWITCH)
+    target_link_libraries(${TR_NAME} nx)
+endif()
 
 if(ICONV_FOUND)
     target_link_libraries(${TR_NAME} ${ICONV_LIBRARIES})

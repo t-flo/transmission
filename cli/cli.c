@@ -36,8 +36,6 @@
 #include <libtransmission/version.h>
 #include <libtransmission/web.h> /* tr_webRun */
 
-#include <switch.h>
-
 /***
 ****
 ***/
@@ -223,8 +221,9 @@ getConfigDir (int argc, const char ** argv)
   return configDir;
 }
 
-int tr_main_old(int argc,
-                char* argv[])
+int
+tr_main (int    argc,
+         char * argv[])
 {
   tr_session  * h;
   tr_ctor     * ctor;
@@ -281,6 +280,9 @@ int tr_main_old(int argc,
         }
     }
 
+  tr_variantDictAddBool (&settings, TR_KEY_nxSplitFiles, true);
+  tr_variantDictAddInt (&settings, TR_KEY_nxSplitSize, 40000000);
+
   h = tr_sessionInit (configDir, false, &settings);
 
   ctor = tr_ctorNew (h);
@@ -322,6 +324,10 @@ int tr_main_old(int argc,
       return EXIT_FAILURE;
     }
 
+  signal (SIGINT, sigHandler);
+#ifndef _WIN32
+  signal (SIGHUP, sigHandler);
+#endif
   tr_torrentStart (tor);
 
   if (verify)
@@ -330,7 +336,7 @@ int tr_main_old(int argc,
       tr_torrentVerify (tor, NULL, NULL);
     }
 
-  while(appletMainLoop())
+  for (;;)
     {
       char  line[LINEWIDTH];
       const tr_stat * st;
@@ -338,14 +344,13 @@ int tr_main_old(int argc,
                                            "Tracker gave an error:",
                                            "Error:" };
 
-      hidScanInput();
-      u64 key_down = hidKeysDown(CONTROLLER_P1_AUTO);
+      tr_wait_msec (200);
 
-      if (gotsig || (key_down & KEY_PLUS))
+      if (gotsig)
         {
           gotsig = false;
-          printf("\nStopping torrent...\n");
-          tr_torrentStop(tor);
+          printf ("\nStopping torrent...\n");
+          tr_torrentStop (tor);
         }
 
       if (manualUpdate)
@@ -371,10 +376,6 @@ int tr_main_old(int argc,
 
       if (messageName[st->error])
         fprintf (stderr, "\n%s: %s\n", messageName[st->error], st->errorString);
-      
-      consoleUpdate(NULL);
-      tr_switch_join_finished_threads();
-      tr_wait_msec(100);
     }
 
   tr_sessionSaveSettings (h, configDir, &settings);
@@ -382,47 +383,7 @@ int tr_main_old(int argc,
   printf ("\n");
   tr_variantFree (&settings);
   tr_sessionClose (h);
-}
-
-#define SOCK_BUFFERSIZE 65536
-
-//extern __nx_fs_num_sessions = 16;
-
-
-int tr_main(int argc, char* argv[])
-{
-  consoleInit(NULL);
-
-  static const SocketInitConfig socketInitConfig = {
-        .bsdsockets_version = 1,
-
-        .tcp_tx_buf_size        = 8 * SOCK_BUFFERSIZE,
-        .tcp_rx_buf_size        = 8 * SOCK_BUFFERSIZE,
-        .tcp_tx_buf_max_size    = 16 * SOCK_BUFFERSIZE,
-        .tcp_rx_buf_max_size    = 16 * SOCK_BUFFERSIZE,
-
-        .udp_tx_buf_size = 8 * SOCK_BUFFERSIZE,
-        .udp_rx_buf_size = 8 * SOCK_BUFFERSIZE,
-
-        .sb_efficiency = 8,
-        .num_bsd_sessions = 8
-    };
-
-  int rc;
-  if (R_FAILED(rc = socketInitialize(&socketInitConfig)))
-      printf("socketInitializeDefault() failed: 0x%x.\n\n", rc);
-
-  nxlinkStdio();
-  tr_switch_init();
-
-  int ret= tr_main_old(argc, argv);
-  consoleUpdate(NULL);
-
-  tr_switch_exit();
-  socketExit();
-  consoleExit(NULL);
-
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 /***
@@ -523,5 +484,25 @@ parseCommandLine (tr_variant * d, int argc, const char ** argv)
     }
 
   return 0;
+}
+
+static void
+sigHandler (int signal)
+{
+  switch (signal)
+    {
+      case SIGINT:
+        gotsig = true;
+        break;
+
+#ifndef _WIN32
+      case SIGHUP:
+        manualUpdate = true;
+        break;
+
+#endif
+      default:
+        break;
+    }
 }
 
