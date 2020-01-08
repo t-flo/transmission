@@ -4,6 +4,10 @@ A homebrew port of Transmission 2.94 for Nintendo Switch with a very basic conso
 
 ![screenshot](/switch/screenshot.jpg?raw=true)
 
+## Install
+
+Extract the release zip to the /switch folder on your sdcard. Skip the settings.json if you don't want to revert to the release defaults.
+
 ## exFAT support
 
 This was tested only with the FAT32 file-system. Using exFAT could lead to **DATA CORRUPTION**, especially if nxTransmission crashes.
