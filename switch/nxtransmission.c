@@ -30,8 +30,8 @@
 #define LOGFILE "sdmc:/switch/nxTransmission/log.txt"
 #define SPLIT_FILE_SIZE 4000000000l
 
-#define SOCK_BUFFERSIZE 32768
-extern int __nx_fs_num_sessions = 8;
+#define SOCK_BUFFERSIZE 0x10000
+u32 __nx_fs_num_sessions = 8;
 
 #define DEFAULT_RPC_USERNAME "switch"
 #define DEFAULT_RPC_PASSWORD "switch"
@@ -102,7 +102,7 @@ console_update_status (const char *fmt, ...)
     consoleSelect(&status_console);
     consoleClear();
 
-    printf(YELLOW "nxTransmission %s     ---" RED "     Press B to exit.\n", VERSION_STRING);
+    printf(YELLOW "nxTransmission %s   --" RED "   Press B to exit.\n", VERSION_STRING);
 
     printf(GREEN "RPC: http://%s:%i  Default username/password: %s/%s\n\n",
         listen_addr,
@@ -126,7 +126,7 @@ press_b_again_to_exit (void)
     while(appletMainLoop())
     {       
         hidScanInput();
-        if (hidKeysDown(CONTROLLER_P1_AUTO) & KEY_B)
+        if (hidKeysDown(CONTROLLER_P1_AUTO) & (KEY_B | KEY_PLUS))
             break;
     }
 }
@@ -421,6 +421,7 @@ int main(void)
 
     static const SocketInitConfig socketInitConfig = {
         .bsdsockets_version = 1,
+        .bsd_service_type = BsdServiceType_System,
 
         .tcp_tx_buf_size = SOCK_BUFFERSIZE,
         .tcp_rx_buf_size = SOCK_BUFFERSIZE,
@@ -431,7 +432,8 @@ int main(void)
         .udp_rx_buf_size = SOCK_BUFFERSIZE,
 
         .sb_efficiency = 32,
-        .num_bsd_sessions = 16};
+        .num_bsd_sessions = 8
+        };
 
     int rc;
     if (R_FAILED(rc = socketInitialize(&socketInitConfig)))
