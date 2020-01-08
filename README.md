@@ -1,19 +1,30 @@
 # nxTransmission
 
-A homebrew port of Transmission 2.94 for Nintendo Switch. It has only a basic console UI, torrents can be added/managed by a web browser remotely, or with something like [Transdroid](https://github.com/erickok/transdroid).
+A homebrew port of Transmission 2.94 for Nintendo Switch with a very basic console UI. Torrents can be added/managed by a web browser remotely, or with something like [Transdroid](https://github.com/erickok/transdroid).
 
 ![screenshot](/switch/screenshot.jpg?raw=true)
 
+## exFAT support
+
+This was tested only with the FAT32 file-system. Using exFAT could lead to **DATA CORRUPTION**, especially if nxTransmission crashes.
+
+## FAT32 limit
+
+FAT32 has a file size limit of 4GB, files bigger than this limit are split automatically to a folder matching the original file name, and the file concatenation attribute is applied to the folder when the torrent fully completes. The file-system is detected based on the firmware version, and splitting is on by default if exFAT is not supported. The split setting can be forced from settings.json by adding entry 
+
+```
+    "nx-split-files": true[or false]
+```
+
 ## Notes
 
-* Torrents are downloaded to the /Downloads folder on the sdcard.
-* You can customize the default settings by editing /switch/nxTransmission/settings.json, but this can lead to stability issues.
-* As for now this was tested only with Fat32 filesystem. Using exFat could easliy lead to DATA CORRUPTION, especially if nxTransmission crashes.
-* Fat32 has a file size limit of 4Gb.
+* Torrents are downloaded by default to the **/Downloads** folder on the sdcard.
+* You can customize the settings by editing **/switch/nxTransmission/settings.json**, or in the browser with the web client. Be warned this can lead to speed and/or stability issues.
 
 ## Known issues
 
 * Enabling DHT could lead to crashes on exit.
+* udp trackers are not handled correctly.
 
 ## Building
 

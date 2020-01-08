@@ -23,7 +23,6 @@
 #include <switch.h>
 
 #define MY_NAME "nx-transmission"
-#define VERSION_STRING "0.1.0"
 
 #define NXLINK 0
 #define LOGTOFILE 0 // 1 if log to 

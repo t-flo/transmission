@@ -1,5 +1,9 @@
 project(nxTransmission)
 
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 2)
+set(VERSION_MICRO 0)
+
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CURL_INCLUDE_DIRS}
@@ -36,12 +40,9 @@ set(HOMEBREW_APP ${PROJECT_NAME})
 set(APP_TITLE ${PROJECT_NAME})
 set(APP_AUTHOR "t-flo")
 set(APP_ICON $(CMAKE_SOURCE_DIR)/switch/nxtransmission.jpg)
-
-set(VERSION_MAJOR 0)
-set(VERSION_MINOR 1)
-set(VERSION_MICRO 0)
 set(APP_VERSION
         "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_MICRO}")
+target_compile_definitions(${PROJECT_NAME}.elf PRIVATE VERSION_STRING="${APP_VERSION}")
 
 include(nx-utils)
 
