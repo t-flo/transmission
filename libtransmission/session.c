@@ -591,7 +591,7 @@ tr_sessionInit (const char * configDir,
   tr_session * session;
   struct init_data data;
   bool boolVal;
-  uint64_t uint64Val;
+  int64_t int64Val;
 
   assert (tr_variantIsDict (clientSettings));
 
@@ -611,8 +611,8 @@ tr_sessionInit (const char * configDir,
   if(tr_variantDictFindBool (clientSettings, TR_KEY_nxSplitFiles, &boolVal))
     session->nxSplitFiles = boolVal;
   
-  if(tr_variantDictFindInt (clientSettings, TR_KEY_nxSplitSize, &uint64Val))
-    session->nxSplitFileSize = uint64Val;
+  if(tr_variantDictFindInt (clientSettings, TR_KEY_nxSplitSize, &int64Val))
+    session->nxSplitFileSize = int64Val;
 
   /* nice to start logging at the very beginning */
   if (tr_variantDictFindInt (clientSettings, TR_KEY_message_level, &i))

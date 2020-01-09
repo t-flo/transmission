@@ -22,14 +22,16 @@
 
 #include <switch.h>
 
-#define MY_NAME "nx-transmission"
+#define MY_NAME "nxTransmission"
 
 #define NXLINK 0
 #define LOGTOFILE 0 // 1 if log to 
 #define LOGFILE "sdmc:/switch/nxTransmission/log.txt"
-#define SPLIT_FILE_SIZE 4000000000l
 
-#define SOCK_BUFFERSIZE 0x10000
+#define SPLIT_FILE_SIZE 0xFFFF0000 // 4,294,901,760 bytes
+#define CHUNKSIZE 0x8000 // 32,768 bytes
+
+#define SOCK_BUFFERSIZE 0x10000 
 u32 __nx_fs_num_sessions = 8;
 
 #define DEFAULT_RPC_USERNAME "switch"
@@ -369,7 +371,6 @@ static int
 tr_main_impl (bool isExfat)
 {
     int ret = 1;
-    tr_error * error = NULL;
 
     /* load settings from defaults + config file */
     tr_variantInitDict (&settings, 0);
@@ -393,12 +394,22 @@ tr_main_impl (bool isExfat)
         tr_variantDictAddInt (&settings, TR_KEY_nxSplitSize, SPLIT_FILE_SIZE);
     }
 
+    /* if the split size cannot be dividev by chunk size(32 768), the system won't handle correctly the split files. */
+    int64_t int64Val;
+    if(tr_variantDictFindInt (&settings, TR_KEY_nxSplitSize, &int64Val))
+    {
+        if(int64Val % CHUNKSIZE)
+        {
+            char buf[256];
+            tr_snprintf (buf, sizeof (buf), "nx-split-size = %ld cannot be divided by chunk size, reset nx-split-size to %u\n", int64Val, SPLIT_FILE_SIZE);
+            printMessage (logfile, TR_LOG_ERROR, MY_NAME, buf, nxbasename(__FILE__), __LINE__);
+            tr_variantDictAddInt (&settings, TR_KEY_nxSplitSize, SPLIT_FILE_SIZE);
+        }
+    }
+
     if (!start_session ())
     {
-        char buf[256];
-        tr_snprintf (buf, sizeof (buf), "Failed to start: %s\n", error->message);
-        printMessage (logfile, TR_LOG_ERROR, MY_NAME, buf, nxbasename(__FILE__), __LINE__);
-        tr_error_free (error);
+        printMessage (logfile, TR_LOG_ERROR, MY_NAME, "Failed to start session.\n", nxbasename(__FILE__), __LINE__);
         goto cleanup;
     }
 
