@@ -27,8 +27,9 @@ FAT32 has a file size limit of 4GB, files bigger than this limit are split autom
 
 ## Known issues
 
-* Enabling DHT could lead to crashes on exit.
+* enabling DHT could lead to crashes on exit.
 * udp trackers are not handled correctly.
+* files/folders with exotic characters may be not downloaded, or are downloaded, but cannot be opened on switch.
 
 ## Building
 
