@@ -279,6 +279,10 @@ msgstr "Stop seeding if idle for N minutes:"
 msgid "Speed"
 msgstr "Speed"
 
+#: ../gtk/details.c
+msgid "Sequential download"
+msgstr "Sequential download"
+
 #: ../gtk/details.c:480
 msgid "Honor global _limits"
 msgstr "Honour global _limits"

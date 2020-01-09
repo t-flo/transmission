@@ -86,6 +86,10 @@ div#toolbar {
     background-image: url("images/toolbar-start.png"); }
   div#toolbar > div#toolbar-pause {
     background-image: url("images/toolbar-pause.png"); }
+  div#toolbar > div#toolbar-download-random {
+    background-image: url("images/toolbar-download-random.png"); }
+  div#toolbar > div#toolbar-download-sequential {
+    background-image: url("images/toolbar-download-sequential.png"); }
   div#toolbar > div#toolbar-start-all {
     background-image: url("images/toolbar-start-all.png"); }
   div#toolbar > div#toolbar-pause-all {

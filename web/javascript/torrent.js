@@ -104,6 +104,7 @@ Torrent.Fields.StatsExtra = [
 	'haveUnchecked',
 	'haveValid',
 	'peers',
+	'sequential',
 	'startDate',
 	'trackerStats'
 ];
@@ -242,6 +243,7 @@ Torrent.prototype =
 	getRecheckProgress: function() { return this.fields.recheckProgress; },
 	getSeedRatioLimit: function() { return this.fields.seedRatioLimit; },
 	getSeedRatioMode: function() { return this.fields.seedRatioMode; },
+	getSequential: function() { return this.fields.sequential; },
 	getSizeWhenDone: function() { return this.fields.sizeWhenDone; },
 	getStartDate: function() { return this.fields.startDate; },
 	getStatus: function() { return this.fields.status; },

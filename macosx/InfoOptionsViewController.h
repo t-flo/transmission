@@ -32,7 +32,7 @@
     BOOL fSet;
     
     IBOutlet NSPopUpButton * fPriorityPopUp, * fRatioPopUp, * fIdlePopUp;
-    IBOutlet NSButton * fUploadLimitCheck, * fDownloadLimitCheck, * fGlobalLimitCheck, * fRemoveSeedingCompleteCheck;
+    IBOutlet NSButton * fUploadLimitCheck, * fDownloadLimitCheck, * fGlobalLimitCheck, * fRemoveSeedingCompleteCheck, *fSequentialCheck;
     IBOutlet NSTextField * fUploadLimitField, * fDownloadLimitField, * fRatioLimitField, * fIdleLimitField,
                         * fUploadLimitLabel, * fDownloadLimitLabel, * fIdleLimitLabel,
                         * fRatioLimitGlobalLabel, * fIdleLimitGlobalLabel,
@@ -65,5 +65,7 @@
 - (IBAction) setPriority: (id) sender;
 
 - (IBAction) setPeersConnectLimit: (id) sender;
+
+- (IBAction) setSequential: (id) sender;
 
 @end

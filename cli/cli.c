@@ -95,6 +95,8 @@ static const struct tr_option options[] =
   { 'v', "verify",               "Verify the specified torrent", "v",  0, NULL        },
   { 'V', "version",              "Show version number and exit", "V", 0, NULL },
   { 'w', "download-dir",         "Where to save downloaded data", "w",  1, "<path>"    },
+  { 500, "sequential-download",  "Download pieces sequentialy", "seq",  0, NULL    },
+  { 501, "random-download",      "Download pieces randomly (default)", "rnd",  0, NULL    },
   { 0, NULL, NULL, NULL, 0, NULL }
 };
 
@@ -477,7 +479,12 @@ parseCommandLine (tr_variant * d, int argc, const char ** argv)
             if (torrentPath == NULL)
               torrentPath = optarg;
             break;
-
+          case 500:
+            tr_variantDictAddBool (d, TR_KEY_sequentialDownload, true);
+            break;
+          case 501:
+            tr_variantDictAddBool (d, TR_KEY_sequentialDownload, false);
+            break;
           default:
             return 1;
         }

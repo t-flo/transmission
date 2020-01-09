@@ -319,6 +319,7 @@ static const struct tr_key_struct my_static[] =
   { "seedRatioMode", 13 },
   { "seederCount", 11 },
   { "seeding-time-seconds", 20 },
+  { "sequential", 10  },
   { "session-count", 13 },
   { "sessionCount", 12 },
   { "show-backup-trackers", 20 },
