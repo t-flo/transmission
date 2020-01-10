@@ -83,7 +83,7 @@ static uint32_t nxSplitBigFile(tr_info * info, const uint64_t max_file_size, int
 
   info->fileCount = info->fileCount + splitFileCount - 1;
 
-  if(index - 1 > 0)
+  if(index > 0)
     memcpy(newFiles, info->files, sizeof(tr_file) * index);
 
   uint64_t remainingLength = file->length;
