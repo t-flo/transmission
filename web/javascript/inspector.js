@@ -188,6 +188,26 @@ function Inspector(controller) {
 		setTextContent(e.availability_lb, str);
 
 		//
+		//  sequential_lb
+		//
+
+		if(torrents.length < 1)
+			str = none;
+		else {
+			str = torrents[0].getSequential();
+			for(i=0; t=torrents[i]; ++i) {
+				if(str != t.getSequential()) {
+					str = mixed;
+					break;
+				}
+			}
+		}
+		if(typeof str == "boolean")
+			setTextContent(e.sequential_lb, str?"Yes":"No");
+		else
+			setTextContent(e.sequential_lb, str || none);
+
+		//
 		//  downloaded_lb
 		//
 
@@ -782,6 +802,7 @@ function Inspector(controller) {
 		data.elements.downloaded_lb     = $('#inspector-info-downloaded')[0];
 		data.elements.uploaded_lb       = $('#inspector-info-uploaded')[0];
 		data.elements.state_lb          = $('#inspector-info-state')[0];
+		data.elements.sequential_lb     = $('#inspector-info-sequential-download')[0];
 		data.elements.running_time_lb   = $('#inspector-info-running-time')[0];
 		data.elements.remaining_time_lb = $('#inspector-info-remaining-time')[0];
 		data.elements.last_activity_lb  = $('#inspector-info-last-activity')[0];

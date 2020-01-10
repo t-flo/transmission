@@ -285,6 +285,10 @@ msgstr "Dejar de compartir si se está inactivo por N minutos:"
 msgid "Speed"
 msgstr "Velocidad"
 
+#: ../gtk/details.c
+msgid "Sequential download"
+msgstr "Descarga secuencial"
+
 #: ../gtk/details.c:480
 msgid "Honor global _limits"
 msgstr "Satisfacer _límites globales"

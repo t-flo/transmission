@@ -651,6 +651,9 @@ bool       tr_sessionGetDeleteSource (const tr_session *);
 tr_priority_t   tr_torrentGetPriority (const tr_torrent *);
 void            tr_torrentSetPriority (tr_torrent *, tr_priority_t);
 
+bool       tr_torrentGetSequentialDownload (const tr_torrent *);
+void       tr_torrentSetSequentialDownload (tr_torrent *, bool);
+
 /***
 ****
 ****  Torrent Queueing

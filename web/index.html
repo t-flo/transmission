@@ -45,6 +45,9 @@
 			<div id="toolbar-start" title="Start Selected Torrents"></div>
 			<div id="toolbar-pause" title="Pause Selected Torrents"></div>
 			<div id="toolbar-separator"></div>
+			<div id="toolbar-download-random" title="Download Selected Torrent Normally"></div>
+			<div id="toolbar-download-sequential" title="Downloaded Selected Torrent Sequentially"></div>
+			<div id="toolbar-separator"></div>
 			<div id="toolbar-start-all" title="Start All Torrents"></div>
 			<div id="toolbar-pause-all" title="Pause All Torrents"></div>
 			<div id="toolbar-inspector" title="Toggle Inspector"></div>
@@ -206,6 +209,7 @@
 					<div class="row"><div class="key">Uploaded:</div><div class="value" id="inspector-info-uploaded">&nbsp;</div></div>
 					<div class="row"><div class="key">Downloaded:</div><div class="value" id="inspector-info-downloaded">&nbsp;</div></div>
 					<div class="row"><div class="key">State:</div><div class="value" id="inspector-info-state">&nbsp;</div></div>
+					<div class="row"><div class="key">Sequential download:</div><div class="value" id="inspector-info-sequential-download">&nbsp;</div></div>
 					<div class="row"><div class="key">Running Time:</div><div class="value" id="inspector-info-running-time">&nbsp;</div></div>
 					<div class="row"><div class="key">Remaining Time:</div><div class="value" id="inspector-info-remaining-time">&nbsp;</div></div>
 					<div class="row"><div class="key">Last Activity:</div><div class="value" id="inspector-info-last-activity">&nbsp;</div></div>
@@ -412,6 +416,9 @@
 			<li data-command="pause_selected">Pause</li>
 			<li data-command="resume_selected">Resume</li>
 			<li data-command="resume_now_selected">Resume Now</li>
+			<li>---</li>
+			<li id="sequential_download">Download sequentially</li>
+			<li id="random_download">Download randomly</li>
 			<li>---</li>
 			<li data-command="move_top">Move to Top</li>
 			<li data-command="move_up">Move Up</li>

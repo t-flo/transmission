@@ -43,6 +43,8 @@ Transmission.prototype =
 		// Set up user events
 		$('#toolbar-pause').click($.proxy(this.stopSelectedClicked,this));
 		$('#toolbar-start').click($.proxy(this.startSelectedClicked,this));
+		$('#toolbar-download-sequential').click($.proxy(this.downloadSelectedSequentialClicked,this));
+		$('#toolbar-download-random').click($.proxy(this.downloadSelectedRandomClicked,this));
 		$('#toolbar-pause-all').click($.proxy(this.stopAllClicked,this));
 		$('#toolbar-start-all').click($.proxy(this.startAllClicked,this));
 		$('#toolbar-remove').click($.proxy(this.removeClicked,this));
@@ -183,6 +185,8 @@ Transmission.prototype =
 			pause_selected:       function() { tr.stopSelectedTorrents(); },
 			resume_selected:      function() { tr.startSelectedTorrents(false); },
 			resume_now_selected:  function() { tr.startSelectedTorrents(true); },
+			sequential_download:  function() { tr.sequentialSelectedTorrents(true); },
+			random_download:      function() { tr.sequentialSelectedTorrents(false); },
 			move:                 function() { tr.moveSelectedTorrents(false); },
 			remove:               function() { tr.removeSelectedTorrents(); },
 			remove_data:          function() { tr.removeSelectedTorrentsAndData(); },
@@ -492,6 +496,20 @@ Transmission.prototype =
 	startSelectedClicked: function(ev) {
 		if (this.isButtonEnabled(ev)) {
 			this.startSelectedTorrents(false);
+			this.hideMobileAddressbar();
+		}
+	},
+
+	downloadSelectedSequentialClicked: function(ev) {
+		if (this.isButtonEnabled(ev)) {
+			this.sequentialSelectedTorrents(true);
+			this.hideMobileAddressbar();
+		}
+	},
+
+	downloadSelectedRandomClicked: function(ev) {
+		if (this.isButtonEnabled(ev)) {
+			this.sequentialSelectedTorrents(false);
 			this.hideMobileAddressbar();
 		}
 	},
@@ -1190,6 +1208,11 @@ Transmission.prototype =
 	moveBottom: function() {
 		this.remote.moveTorrentsToBottom(this.getSelectedTorrentIds(),
 		                                 this.refreshTorrents, this);
+	},
+
+	sequentialSelectedTorrents: function(seq) {
+		this.remote.sendTorrentSetRequests('torrent-set', this.getSelectedTorrentIds(),
+		                                 { sequential: seq }, this.refreshTorrents, this);
 	},
 
 	/***

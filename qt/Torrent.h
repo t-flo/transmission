@@ -166,6 +166,7 @@ class Torrent: public QObject
       DOWN_LIMITED,
       UP_LIMIT,
       UP_LIMITED,
+      SEQUENTIAL_DOWNLOAD,
       HONORS_SESSION_LIMITS,
       PEER_LIMIT,
       HASH_STRING,
@@ -246,6 +247,7 @@ class Torrent: public QObject
     Speed downloadLimit () const { return Speed::fromKBps (getInt (DOWN_LIMIT)); }
     bool uploadIsLimited () const { return getBool (UP_LIMITED); }
     bool downloadIsLimited () const { return getBool (DOWN_LIMITED); }
+    bool sequentialDownload () const { return getBool (SEQUENTIAL_DOWNLOAD); }
     bool honorsSessionLimits () const { return getBool (HONORS_SESSION_LIMITS); }
     int peerLimit () const { return getInt (PEER_LIMIT); }
     double seedRatioLimit () const { return getDouble (SEED_RATIO_LIMIT); }

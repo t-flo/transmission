@@ -83,6 +83,7 @@ class DetailsDialog: public BaseDialog
     void onRatioModeChanged (int);
     void onIdleModeChanged (int);
     void onIdleLimitChanged ();
+    void onSequentialToggled (bool);
 
   private:
     Session& mySession;

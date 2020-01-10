@@ -96,6 +96,7 @@ Torrent::myProperties[] =
   { DOWN_LIMITED, TR_KEY_downloadLimited, QVariant::Bool, STAT_EXTRA },
   { UP_LIMIT, TR_KEY_uploadLimit, QVariant::Int, STAT_EXTRA }, /* KB/s */
   { UP_LIMITED, TR_KEY_uploadLimited, QVariant::Bool, STAT_EXTRA },
+  { SEQUENTIAL_DOWNLOAD, TR_KEY_sequentialDownload, QVariant::Bool, STAT_EXTRA },
   { HONORS_SESSION_LIMITS, TR_KEY_honorsSessionLimits, QVariant::Bool, STAT_EXTRA },
   { PEER_LIMIT, TR_KEY_peer_limit, QVariant::Int, STAT_EXTRA },
   { HASH_STRING, TR_KEY_hashString, QVariant::String, INFO },

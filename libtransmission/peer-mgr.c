@@ -1025,7 +1025,7 @@ pieceListSort (tr_swarm * s, enum piece_sort_state state)
 static void
 assertWeightedPiecesAreSorted (Torrent * t)
 {
-    if (!t->endgame)
+    if (!t->endgame && !t->tor->sequentialOrder)
     {
         int i;
         setComparePieceByWeightTorrent (t);
@@ -1131,7 +1131,10 @@ pieceListRebuild (tr_swarm * s)
       s->pieces = pieces;
       s->pieceCount = pieceCount;
 
-      pieceListSort (s, PIECES_SORTED_BY_WEIGHT);
+      if(s->tor->sequentialDownload)
+            pieceListSort (s, PIECES_SORTED_BY_INDEX);
+      else
+            pieceListSort (s, PIECES_SORTED_BY_WEIGHT);
 
       /* cleanup */
       tr_free (pool);
@@ -1168,6 +1171,9 @@ pieceListResortPiece (tr_swarm * s, struct weighted_piece * p)
 
   if (p == NULL)
     return;
+
+  if(s->tor->sequentialDownload)
+      return;
 
   /* is the torrent already sorted? */
   pos = p - s->pieces;
@@ -1348,8 +1354,16 @@ tr_peerMgrGetNextRequests (tr_torrent           * tor,
   if (s->pieces == NULL)
     pieceListRebuild (s);
 
-  if (s->pieceSortState != PIECES_SORTED_BY_WEIGHT)
-    pieceListSort (s, PIECES_SORTED_BY_WEIGHT);
+  if (tor->sequentialDownload)
+    {
+        if (s->pieceSortState != PIECES_SORTED_BY_INDEX)
+            pieceListSort (s, PIECES_SORTED_BY_INDEX);
+    }
+  else
+    {
+        if (s->pieceSortState != PIECES_SORTED_BY_WEIGHT)
+            pieceListSort (s, PIECES_SORTED_BY_WEIGHT);
+    }
 
   assertReplicationCountIsExact (s);
   assertWeightedPiecesAreSorted (s);
@@ -1435,7 +1449,7 @@ tr_peerMgrGetNextRequests (tr_torrent           * tor,
   /* In most cases we've just changed the weights of a small number of pieces.
    * So rather than qsort ()ing the entire array, it's faster to apply an
    * adaptive insertion sort algorithm. */
-  if (got > 0)
+  if (got > 0 && !tor->sequentialDownload)
     {
       /* not enough requests || last piece modified */
       if (i == s->pieceCount)
