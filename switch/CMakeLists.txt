@@ -2,7 +2,7 @@ project(nxTransmission)
 
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 2)
-set(VERSION_MICRO 1)
+set(VERSION_MICRO 2)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
