@@ -125,6 +125,38 @@ nxSplitBigFiles(tr_info * info, const uint64_t max_file_size)
   }
 }
 
+static void
+nxReplaceNonASCIICharactersInString(char *str)
+{
+  size_t utfIndex = 0;
+  size_t ascIIIndex = 0;
+  while(str[utfIndex] != '\0')
+  {
+    if(!(str[utfIndex] & 0x80))
+    {
+      str[ascIIIndex++] = str[utfIndex++];
+      continue;
+    }
+
+    str[ascIIIndex++] = '_';
+    utfIndex++;
+
+    while(str[utfIndex] & 0x80)
+      utfIndex++;
+  }
+  str[ascIIIndex] = '\0';
+}
+
+static void
+nxReplaceNonASCIICharactersInFilenames(tr_info * info)
+{
+  /* Workaround for https://github.com/switchbrew/libnx/issues/90 
+   * Replace any non ASCII character with a '_' in file names. */
+  uint32_t fileCount = info->fileCount;
+  for(uint32_t i = 0; i < fileCount; i++)
+    nxReplaceNonASCIICharactersInString(info->files[i].name);
+}
+
 /***
 ****
 ***/
@@ -820,6 +852,8 @@ torrentInitFromInfo (tr_torrent * tor)
 {
   uint64_t t;
   tr_info * info = &tor->info;
+
+  nxReplaceNonASCIICharactersInFilenames(info);
 
   if(tor->session->nxSplitFiles)
     nxSplitBigFiles(info, tor->session->nxSplitFileSize);
