@@ -46,7 +46,9 @@ enum
 void tr_peerIdInit (uint8_t * setme);
 
 struct event_base;
+#ifndef __SWITCH_
 struct evdns_base;
+#endif
 
 struct tr_address;
 struct tr_announcer;
@@ -141,7 +143,9 @@ struct tr_session
     tr_preallocation_mode        preallocationMode;
 
     struct event_base          * event_base;
+#ifndef __SWITCH__
     struct evdns_base          * evdns_base;
+#endif
     struct tr_event_handle     * events;
 
     uint16_t                     peerLimit;

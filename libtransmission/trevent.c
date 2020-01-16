@@ -256,7 +256,9 @@ libeventThreadFunc (void * veh)
     /* set the struct's fields */
     eh->base = base;
     eh->session->event_base = base;
+#ifndef __SWITCH__
     eh->session->evdns_base = evdns_base_new (base, true);
+#endif
     eh->session->events = eh;
 
     /* listen to the pipe's read fd */

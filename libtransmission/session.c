@@ -1877,8 +1877,10 @@ static void
 sessionCloseImplFinish (tr_session * session)
 {
   /* we had to wait until UDP trackers were closed before closing these: */
+#ifndef __SWITCH__
   evdns_base_free (session->evdns_base, 0);
   session->evdns_base = NULL;
+#endif
   tr_tracker_udp_close (session);
   tr_udpUninit (session);
 

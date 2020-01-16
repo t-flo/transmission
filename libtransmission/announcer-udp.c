@@ -490,6 +490,7 @@ tau_tracker_fail_all (struct tau_tracker  * tracker,
 
 }
 
+#ifndef __SWITCH__
 static void
 tau_tracker_on_dns (int errcode, struct evutil_addrinfo *addr, void * vtracker)
 {
@@ -513,6 +514,7 @@ tau_tracker_on_dns (int errcode, struct evutil_addrinfo *addr, void * vtracker)
         tau_tracker_upkeep (tracker);
     }
 }
+#endif
 
 static void
 tau_tracker_send_request (struct tau_tracker  * tracker,
@@ -679,6 +681,7 @@ tau_tracker_upkeep_ex (struct tau_tracker * tracker,
     /* if we don't have an address yet, try & get one now. */
     if (!closing && tracker->addr == NULL && tracker->dns_request == NULL)
     {
+#ifndef __SWITCH__
         struct evutil_addrinfo hints;
         memset (&hints, 0, sizeof (hints));
         hints.ai_family = AF_UNSPEC;
@@ -689,6 +692,31 @@ tau_tracker_upkeep_ex (struct tau_tracker * tracker,
                                                   tracker->host, NULL, &hints,
                                                   tau_tracker_on_dns, tracker);
         return;
+#else
+        struct addrinfo hints;
+        struct addrinfo * addr;
+        memset (&hints, 0, sizeof (hints));
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_protocol = IPPROTO_UDP;
+        int errcode  = getaddrinfo (tracker->host, NULL, &hints, &addr);
+        
+        if (errcode)
+        {
+            char * errmsg = tr_strdup_printf (_("DNS Lookup failed: %s"),
+                                            gai_strerror (errcode));
+            dbgmsg (tracker->key, "%s", errmsg);
+            tau_tracker_fail_all (tracker, false, false, errmsg);
+            tr_free (errmsg);
+        }
+        else
+        {
+            dbgmsg (tracker->key, "DNS lookup succeeded");
+            tracker->addr = addr;
+            tracker->addr_expiration_time = tr_time () + (60*60); /* one hour */
+            tau_tracker_upkeep (tracker);
+        }
+#endif
     }
 
     dbgmsg (tracker->key, "addr %p -- connected %d (%zu %zu) -- connecting_at %zu",
